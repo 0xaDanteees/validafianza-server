@@ -10,6 +10,8 @@ CREATE TABLE providers (
     provider_type VARCHAR(50) NOT NULL CHECK (provider_type IN ('poliza', 'proveedor', 'seguros', 'otro')),
     provider_key VARCHAR(255) NOT NULL,
     config JSONB DEFAULT '{}'::jsonb,
+    -- native: direct scraping, playwright: browser automation
+    scrapper_type VARCHAR(50) NOT NULL CHECK (scrapper_type IN ('native', 'playwright')),
     metadata hstore,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT NOW(),
