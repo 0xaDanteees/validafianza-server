@@ -14,7 +14,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
-      - ./db/seed/providers.sql:/docker-entrypoint-initdb.d/02-providers.sql
+      - ./db/seeders/providers.sql:/docker-entrypoint-initdb.d/02-providers.sql
     command:
       - "postgres"
       - "-c"
