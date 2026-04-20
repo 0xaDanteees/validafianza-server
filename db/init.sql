@@ -34,7 +34,7 @@ CREATE UNLOGGED TABLE validation_cache (
     metadata hstore
 ) WITH (fillfactor = 70);
 
-CREATE INDEX idx_cache_expires ON validation_cache(expires_at) WHERE expires_at > NOW();
+CREATE INDEX idx_cache_expires ON validation_cache(expires_at);
 CREATE INDEX idx_cache_provider ON validation_cache(provider_id, scraped_at DESC);
 
 --Scraping jobs queue
@@ -56,7 +56,7 @@ CREATE TABLE scraping_jobs (
 );
 
 CREATE INDEX idx_jobs_status_priority ON scraping_jobs(status, priority DESC, created_at ASC) WHERE status = 'pending';
-CREATE INDEX idx_jobs_locked ON scraping_jobs(locked_until) WHERE locked_until > NOW() AND status = 'processing';
+CREATE INDEX idx_jobs_locked ON scraping_jobs(locked_until) WHERE status = 'processing';
 CREATE INDEX idx_jobs_provider ON scraping_jobs(provider_id);
 
 -- rate limiting 
@@ -74,10 +74,10 @@ CREATE UNLOGGED TABLE sessions (
     id UUID PRIMARY KEY,
     -- user_id UUID NOT NULL,
     data JSONB NOT NULL,
-    expires_at TIMESTAMPTZ NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX idx_sessions_expires ON sessions(expires_at) WHERE expires_at > NOW();
+CREATE INDEX idx_sessions_expires ON sessions(expires_at);
 
 --dequeue func with SKIP LOCKED approach
 CREATE OR REPLACE FUNCTION 
