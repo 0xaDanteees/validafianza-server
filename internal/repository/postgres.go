@@ -61,3 +61,7 @@ func (r *PostgresRepo) GetProviderByKey(ctx context.Context, key string) (*model
 
 	return &provider, nil
 }
+
+func (r *PostgresRepo) Pool() *pgxpool.Pool {
+	return r.pool
+}
