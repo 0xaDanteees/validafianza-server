@@ -6,12 +6,12 @@ CREATE EXTENSION IF NOT EXISTS btree_gin;
 
 --providers
 CREATE TABLE providers (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     provider_type VARCHAR(50) NOT NULL CHECK (provider_type IN ('poliza', 'proveedor', 'seguros', 'otro')),
     provider_key VARCHAR(255) NOT NULL,
     config JSONB DEFAULT '{}'::jsonb,
     -- native: direct scraping, playwright: browser automation
-    scrapper_type VARCHAR(50) NOT NULL CHECK (scrapper_type IN ('native', 'playwright')),
+    scraper_type VARCHAR(50) NOT NULL CHECK (scraper_type IN ('native', 'playwright')),
     metadata hstore,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT NOW(),
@@ -39,7 +39,7 @@ CREATE INDEX idx_cache_provider ON validation_cache(provider_id, scraped_at DESC
 
 --Scraping jobs queue
 CREATE TABLE scraping_jobs (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     provider_id UUID REFERENCES providers(id),
     lookup_key VARCHAR(255) NOT NULL,
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
@@ -71,7 +71,7 @@ CREATE INDEX idx_rate_limits_window ON rate_limits(window_start);
 
 -- sessions
 CREATE UNLOGGED TABLE sessions (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     -- user_id UUID NOT NULL,
     data JSONB NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL
