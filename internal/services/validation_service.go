@@ -9,31 +9,28 @@ import (
 
 	"validafianza-server/internal/models"
 	"validafianza-server/internal/repository"
-	"validafianza-server/internal/scrappers"
+	"validafianza-server/internal/scrapers"
 )
 
-
 type ValidationService struct {
-	repo		*repository.PostgresRepo
-	cacheRepo	*repository.CacheRepo
-	CacheTTl	*time.Duration
+	repo      *repository.PostgresRepo
+	cacheRepo *repository.CacheRepo
+	cacheTTL  time.Duration
 }
 
-func NewValidationService(
-	repo			*repository.PostgresRepo,
-	cache			*repository.CacheRepo,
-	cacheTTLHours 	int
+func NewValidationServices(
+	repo         *repository.PostgresRepo,
+	cache         *repository.CacheRepo,
+	cacheTTLHours int,
 ) *ValidationService {
 	return &ValidationService{
-		repo:	repo,
-		cacheRepo: cacheRepo,
-		cacheTTL: time.Duration(cacheTTLHours) * time.Hour,
+		repo:      repo,
+		cacheRepo: cache,
+		cacheTTL:  time.Duration(cacheTTLHours) * time.Hour,
 	}
 }
 
-
-func (s *ValidationService) Validate(ctx context.Context, req *models.ValidationRequest)
-(*models.ValidationResponse, error) {
+func (s *ValidationService) Validate(ctx context.Context, req *models.ValidationRequest) (*models.ValidationResponse, error) {
 	provider, err := s.repo.GetProviderByKey(ctx, req.ProviderKey)
 	if err != nil {
 		return nil, fmt.Errorf("provider not found: %w", err)
@@ -41,9 +38,9 @@ func (s *ValidationService) Validate(ctx context.Context, req *models.Validation
 
 	if !provider.IsActive {
 		return &models.ValidationResponse{
-			Valid: false,
-			InValid: true,
-			Message: "Provicer temporarily unavailable",
+			Valid:    false,
+			Invalid:  true,
+			Message:  "Provider temporarily unavailable",
 		}, nil
 	}
 
@@ -57,35 +54,32 @@ func (s *ValidationService) Validate(ctx context.Context, req *models.Validation
 	}
 
 	scraper, err := scrapers.Get(provider.ProviderKey)
-
 	if err != nil {
 		return nil, fmt.Errorf("scraper not found: %w", err)
 	}
 
 	scrapeReq := &models.ScrapeRequest{
 		ProviderKey: provider.ProviderKey,
-		LookupKey: req.LookupKey,
-		Config: provider.Config,
+		LookupKey:   req.LookupKey,
+		Config:      provider.Config,
 	}
 
 	result, err := scraper.Scrape(ctx, scrapeReq)
-
 	if err != nil {
 		return nil, fmt.Errorf("scraping failed: %w", err)
 	}
 
 	now := time.Now()
 	response := &models.ValidationResponse{
-        Valid:       result.Valid,
-        Invalid:     result.Invalid,
-        Message:     result.Message,
-        Data:        result.Data,
-        HTMLExtract: result.HTMLExtract,
-        ScrapedAt:   &now,
-    }
+		Valid:       result.Valid,
+		Invalid:     result.Invalid,
+		Message:     result.Message,
+		Data:        result.Data,
+		HTMLExtract: result.HTMLExtract,
+		ScrapedAt:   &now,
+	}
 
-	if err := s.cacherepo.Set(ctx, lookupHash, provider.ID, req.LookupKey, response, s.cacheTTL);
-	err != nil {
+	if err := s.cacheRepo.Set(ctx, lookupHash, provider.ID, req.LookupKey, response, s.cacheTTL); err != nil {
 		fmt.Printf("cache write failed: %v\n", err)
 	}
 
