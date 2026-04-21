@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -22,7 +21,7 @@ func (r *CacheRepo) Get(ctx context.Context, lookupHash string) (*models.Validat
 	query := `
 		UPDATE validation_cache
 		SET access_count = access_count + 1
-		WHERE lookup_hash = $1 AND expires > NOW()
+		WHERE lookup_hash = $1 AND expires_at > NOW()
 		RETURNING result, scraped_at
 	`
 
@@ -30,7 +29,6 @@ func (r *CacheRepo) Get(ctx context.Context, lookupHash string) (*models.Validat
 	var scrapedAt time.Time
 
 	err := r.pool.QueryRow(ctx, query, lookupHash).Scan(&resultJSON, &scrapedAt)
-
 	if err != nil {
 		return nil, err
 	}
@@ -44,8 +42,7 @@ func (r *CacheRepo) Get(ctx context.Context, lookupHash string) (*models.Validat
 	return &response, nil
 }
 
-
-func (r *CacheRepo) Set(ctx context.Context, lookupHash string, providerID int32, lookupKey string, reponse *models.ValidationResponse, ttl time.Duration) error {
+func (r *CacheRepo) Set(ctx context.Context, lookupHash string, providerID int32, lookupKey string, response *models.ValidationResponse, ttl time.Duration) error {
 	resultJSON, err := json.Marshal(response)
 	if err != nil {
 		return err
@@ -55,14 +52,14 @@ func (r *CacheRepo) Set(ctx context.Context, lookupHash string, providerID int32
 		INSERT INTO validation_cache (lookup_hash, provider_id, lookup_key, result, expires_at)
 		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (lookup_hash) DO UPDATE
-		SET 
-			esult = EXCLUDED.result, 
+		SET
+			result = EXCLUDED.result,
 			access_count = validation_cache.access_count + 1,
-			scraped_at = NOW()
+			scraped_at = NOW(),
 			expires_at = EXCLUDED.expires_at
 	`
 
-	expiresAt := time.Now().add(ttl)
+	expiresAt := time.Now().Add(ttl)
 	_, err = r.pool.Exec(ctx, query, lookupHash, providerID, lookupKey, resultJSON, expiresAt)
 	return err
 }
