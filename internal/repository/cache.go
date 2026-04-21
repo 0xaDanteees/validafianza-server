@@ -42,7 +42,7 @@ func (r *CacheRepo) Get(ctx context.Context, lookupHash string) (*models.Validat
 	return &response, nil
 }
 
-func (r *CacheRepo) Set(ctx context.Context, lookupHash string, providerID int32, lookupKey string, response *models.ValidationResponse, ttl time.Duration) error {
+func (r *CacheRepo) Set(ctx context.Context, lookupHash string, providerID string, lookupKey string, response *models.ValidationResponse, ttl time.Duration) error {
 	resultJSON, err := json.Marshal(response)
 	if err != nil {
 		return err

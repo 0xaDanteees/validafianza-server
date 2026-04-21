@@ -39,7 +39,7 @@ func (r *PostgresRepo) Close() {
 
 func (r *PostgresRepo) GetProviderByKey(ctx context.Context, key string) (*models.ValidationProvider, error) {
 	query := `
-		SELECT id, provider_type, provider_key, scraper_type, config, metadata, is_active
+		SELECT id, provider_type, provider_key, scraper_type, config, is_active
 		FROM providers
 		WHERE provider_key = $1 AND is_active = true
 	`
@@ -51,7 +51,6 @@ func (r *PostgresRepo) GetProviderByKey(ctx context.Context, key string) (*model
 		&provider.ProviderKey,
 		&provider.ScraperType,
 		&provider.Config,
-		&provider.Metadata,
 		&provider.IsActive,
 	)
 

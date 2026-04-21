@@ -5,7 +5,7 @@ import (
 )
 
 type ValidationProvider struct {
-	ID           int32                  `db:"id" json:"id"`
+	ID           string                 `db:"id" json:"id"`
 	ProviderType string                 `db:"provider_type" json:"provider_type"`
 	ProviderKey  string                 `db:"provider_key" json:"provider_key"`
 	ScraperType  string                 `db:"scraper_type" json:"scraper_type"`

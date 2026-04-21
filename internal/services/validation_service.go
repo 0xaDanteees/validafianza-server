@@ -86,8 +86,8 @@ func (s *ValidationService) Validate(ctx context.Context, req *models.Validation
 	return response, nil
 }
 
-func (s *ValidationService) generateLookupHash(providerID int32, lookupKey string) string {
-	data := fmt.Sprintf("%d%s", providerID, lookupKey)
+func (s *ValidationService) generateLookupHash(providerID string, lookupKey string) string {
+	data := fmt.Sprintf("%s%s", providerID, lookupKey)
 	hash := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(hash[:])
 }
