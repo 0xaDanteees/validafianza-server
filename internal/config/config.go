@@ -10,7 +10,7 @@ import (
 type Config struct {
 	DatabaseURL string
 	Port		string
-	CacheTTl	int
+	CacheTTL	int
 }
 
 func Load() (*Config, error) {
@@ -31,12 +31,12 @@ func Load() (*Config, error) {
 		)
 	}
 
-	CacheTTl, _ := strconv.Atoi(getEnv("CACHE_TTL_HOURS", "24"))
+	CacheTTL, _ := strconv.Atoi(getEnv("CACHE_TTL_HOURS", "24"))
 
 	return &Config {
 		DatabaseURL: dbURL,
 		Port: port,
-		CacheTTl: CacheTTl,
+		CacheTTL: CacheTTL,
 	}, nil
 }
 

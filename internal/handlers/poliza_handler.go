@@ -10,7 +10,7 @@ type PolizaHandler struct {
 	validationService *services.ValidationService
 }
 
-func NewPolizaHandler(vs *service.ValidationService) *PolizaHandler {
+func NewPolizaHandler(vs *services.ValidationService) *PolizaHandler {
 	return &PolizaHandler{validationService: vs}
 }
 
