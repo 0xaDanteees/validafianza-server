@@ -36,11 +36,11 @@ func (s *MapfreScraper) Scrape(ctx context.Context, req *models.ScrapeRequest) (
 
 	formData.Set(
 		"ctl00$maincontent$ap1_content$lvCompleto",
-		req.LookupKey
+		req.LookupKey,
 	)
 	formData.Set(
 		"ctl00$maincontent$bValida",
-		"Validar"
+		"Validar",
 	)
 
 	doc, err := client.PostForm(formData)
@@ -49,13 +49,13 @@ func (s *MapfreScraper) Scrape(ctx context.Context, req *models.ScrapeRequest) (
 	}
 
 	hasError := s.hasErrorPattern(doc)
-	HTMLExtract := s.extractMainTable(doc)
+	htmlExtract := s.extractMainTable(doc)
 
 	return &models.ScrapeResult{
-        Valid:       !hasError,
-        Invalid:     hasError,
-        Message:     s.getMessage(hasError),
-        HTMLExtract: htmlExtract,
+		Valid:       !hasError,
+		Invalid:     hasError,
+		Message:     s.getMessage(hasError),
+		HTMLExtract: htmlExtract,
         Data: map[string]interface{}{
             "provider": "MAPFRE",
             "lookup":   req.LookupKey,
@@ -113,7 +113,7 @@ func searchText(node *html.Node, pattern *regexp.Regexp) bool {
 
 func renderNode( n *html.Node) string {
 	var buf strings.Builder
-	html.Render(&bug, n)
+	html.Render(&buf, n)
 	return buf.String()
 }
 
