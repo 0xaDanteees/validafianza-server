@@ -9,20 +9,21 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	fiberSwagger "github.com/gofiber/swagger"
 
 	_ "validafianza-server/docs"
 	"validafianza-server/internal/config"
 	"validafianza-server/internal/handlers"
+	applogger "validafianza-server/internal/logger"
+	"validafianza-server/internal/middleware"
 	"validafianza-server/internal/repository"
 	"validafianza-server/internal/scrapers"
 	"validafianza-server/internal/scrapers/polizas"
@@ -32,12 +33,16 @@ import (
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		fmt.Fprintf(os.Stderr, "failed to load config: %v\n", err)
+		os.Exit(1)
 	}
+
+	applogger.Init(cfg.Env)
 
 	repo, err := repository.NewPostgresRepo(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to db: %v", err)
+		slog.Error("failed to connect to db", "error", err)
+		os.Exit(1)
 	}
 	defer repo.Close()
 
@@ -51,6 +56,7 @@ func main() {
 	scrapers.Register(polizas.NewInsurgentesScraper())
 
 	cacheRepo := repository.NewCacheRepo(repo.Pool())
+	rateLimitRepo := repository.NewRateLimitRepo(repo.Pool())
 	validationService := services.NewValidationServices(repo, cacheRepo, cfg.CacheTTL)
 
 	app := fiber.New(fiber.Config{
@@ -58,7 +64,7 @@ func main() {
 	})
 
 	app.Use(recover.New())
-	app.Use(logger.New())
+	app.Use(middleware.RequestLogger())
 	app.Use(cors.New())
 
 	app.Get("/swagger/*", fiberSwagger.New(fiberSwagger.Config{
@@ -74,14 +80,20 @@ func main() {
 	api := app.Group("/api/v1")
 
 	polizasGroup := api.Group("/polizas")
+	polizasGroup.Use(middleware.RateLimit(rateLimitRepo, cfg.RateLimitMax, cfg.RateLimitWindowSec))
 	polizasGroup.Post("/validate", polizaHandler.ValidatePoliza)
 	polizasGroup.Get("/providers", polizaHandler.ListProviders)
 
 	go func() {
 		addr := fmt.Sprintf(":%s", cfg.Port)
-		log.Printf("Server starting on %s — Swagger: http://localhost%s/swagger/index.html", addr, addr)
+		slog.Info("server starting",
+			"addr", addr,
+			"env", cfg.Env,
+			"swagger", fmt.Sprintf("http://localhost%s/swagger/index.html", addr),
+		)
 		if err := app.Listen(addr); err != nil {
-			log.Fatalf("Server failed: %v", err)
+			slog.Error("server failed", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -89,10 +101,9 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down server...")
+	slog.Info("shutting down server")
 	if err := app.Shutdown(); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		slog.Error("forced shutdown", "error", err)
 	}
-
-	log.Println("Server exited")
+	slog.Info("server exited")
 }
