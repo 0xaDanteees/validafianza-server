@@ -13,14 +13,14 @@ import (
 )
 
 type ValidationService struct {
-	repo      *repository.PostgresRepo
-	cacheRepo *repository.CacheRepo
+	repo      providerRepository
+	cacheRepo validationCache
 	cacheTTL  time.Duration
 }
 
 func NewValidationServices(
-	repo         *repository.PostgresRepo,
-	cache         *repository.CacheRepo,
+	repo  *repository.PostgresRepo,
+	cache *repository.CacheRepo,
 	cacheTTLHours int,
 ) *ValidationService {
 	return &ValidationService{

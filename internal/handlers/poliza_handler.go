@@ -1,16 +1,26 @@
 package handlers
 
 import (
+	"context"
+
 	"github.com/gofiber/fiber/v2"
 	"validafianza-server/internal/models"
 	"validafianza-server/internal/services"
 )
 
+type validationServicer interface {
+	Validate(ctx context.Context, req *models.ValidationRequest) (*models.ValidationResponse, error)
+}
+
 type PolizaHandler struct {
-	validationService *services.ValidationService
+	validationService validationServicer
 }
 
 func NewPolizaHandler(vs *services.ValidationService) *PolizaHandler {
+	return &PolizaHandler{validationService: vs}
+}
+
+func NewPolizaHandlerWithService(vs validationServicer) *PolizaHandler {
 	return &PolizaHandler{validationService: vs}
 }
 
