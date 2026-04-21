@@ -8,15 +8,18 @@ import (
 
 
 type Config struct {
-	DatabaseURL string
-	Port		string
-	CacheTTL	int
+	DatabaseURL        string
+	Port               string
+	Env                string
+	CacheTTL           int
+	RateLimitMax       int // max requests per window
+	RateLimitWindowSec int // sliding window size in seconds
 }
 
 func Load() (*Config, error) {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port="3000"
+		port = "3000"
 	}
 
 	dbURL := os.Getenv("DATABASE_URL")
@@ -31,12 +34,17 @@ func Load() (*Config, error) {
 		)
 	}
 
-	CacheTTL, _ := strconv.Atoi(getEnv("CACHE_TTL_HOURS", "24"))
+	cacheTTL, _ := strconv.Atoi(getEnv("CACHE_TTL_HOURS", "24"))
+	rateLimitMax, _ := strconv.Atoi(getEnv("RATE_LIMIT_MAX", "60"))
+	rateLimitWindow, _ := strconv.Atoi(getEnv("RATE_LIMIT_WINDOW_SECONDS", "60"))
 
-	return &Config {
-		DatabaseURL: dbURL,
-		Port: port,
-		CacheTTL: CacheTTL,
+	return &Config{
+		DatabaseURL:        dbURL,
+		Port:               port,
+		Env:                getEnv("ENV", "development"),
+		CacheTTL:           cacheTTL,
+		RateLimitMax:       rateLimitMax,
+		RateLimitWindowSec: rateLimitWindow,
 	}, nil
 }
 
