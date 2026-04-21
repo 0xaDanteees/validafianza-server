@@ -96,24 +96,4 @@ func (s *MapfreScraper) extractMainTable(doc *html.Node) []string {
 }
 
 
-func searchText(node *html.Node, pattern *regexp.Regexp) bool {
-	if node.Type == html.TextNode {
-		if pattern.MatchString(node.Data) {
-			return true
-		}
-	}
-
-	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		if searchText(c, pattern) {
-			return true
-		}
-	}
-	return false
-}
-
-func renderNode( n *html.Node) string {
-	var buf strings.Builder
-	html.Render(&buf, n)
-	return buf.String()
-}
 
