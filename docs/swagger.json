@@ -1,0 +1,204 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API para validación de pólizas de fianza de afianzadoras mexicanas.",
+        "title": "Validafianza API",
+        "contact": {
+            "name": "Validafianza"
+        },
+        "license": {
+            "name": "Private"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:3000",
+    "basePath": "/",
+    "paths": {
+        "/api/v1/polizas/providers": {
+            "get": {
+                "description": "Returns the keys of all afianzadoras currently registered and available for validation",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "polizas"
+                ],
+                "summary": "List supported providers",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ProvidersResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/polizas/validate": {
+            "post": {
+                "description": "Scrapes the afianzadora website and returns the validation result. Results are cached for CACHE_TTL_HOURS. Use force_refresh=true to bypass cache.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "polizas"
+                ],
+                "summary": "Validate fianza policy",
+                "parameters": [
+                    {
+                        "description": "Validation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ValidationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ValidationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Returns service liveness. Does not check DB — use for load balancer probes.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.HealthResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "models.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "provider not found: UNKNOWN"
+                }
+            }
+        },
+        "models.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "service": {
+                    "type": "string",
+                    "example": "validafianza-api"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "models.ProvidersResponse": {
+            "type": "object",
+            "properties": {
+                "providers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "MAPFRE",
+                        "BERKLEY_MEXICO_FIANZAS",
+                        "SOFIMEX"
+                    ]
+                }
+            }
+        },
+        "models.ValidationRequest": {
+            "type": "object",
+            "properties": {
+                "force_refresh": {
+                    "description": "Skip cache and force a fresh scrape",
+                    "type": "boolean",
+                    "example": false
+                },
+                "lookup_key": {
+                    "description": "Policy number / línea de validación",
+                    "type": "string",
+                    "example": "0032400003909000000491774"
+                },
+                "provider_key": {
+                    "description": "Afianzadora key — must match a registered provider",
+                    "type": "string",
+                    "example": "MAPFRE"
+                }
+            }
+        },
+        "models.ValidationResponse": {
+            "type": "object",
+            "properties": {
+                "cached_at": {
+                    "description": "When the result was served from cache",
+                    "type": "string"
+                },
+                "data": {
+                    "description": "Provider-specific structured data",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "html_extraido": {
+                    "description": "Raw HTML fragments extracted from the provider page",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "mensaje": {
+                    "description": "Human-readable result message",
+                    "type": "string",
+                    "example": "Póliza validada exitosamente en MAPFRE"
+                },
+                "no_valido": {
+                    "description": "True when the policy could not be validated",
+                    "type": "boolean",
+                    "example": false
+                },
+                "scraped_at": {
+                    "description": "When the scrape was performed",
+                    "type": "string"
+                },
+                "valido": {
+                    "description": "True when the policy is valid and active",
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        }
+    }
+}
