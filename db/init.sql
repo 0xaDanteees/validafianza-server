@@ -59,15 +59,42 @@ CREATE INDEX idx_jobs_status_priority ON scraping_jobs(status, priority DESC, cr
 CREATE INDEX idx_jobs_locked ON scraping_jobs(locked_until) WHERE status = 'processing';
 CREATE INDEX idx_jobs_provider ON scraping_jobs(provider_id);
 
--- rate limiting 
+-- rate limiting (sliding window: stores per-request timestamps as JSONB array)
 CREATE UNLOGGED TABLE rate_limits (
     key VARCHAR(255) PRIMARY KEY,
-    requests INTEGER DEFAULT 1,
-    window_start TIMESTAMP DEFAULT NOW(),
+    requests JSONB DEFAULT '[]'::jsonb,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
     metadata hstore
-);
+) WITH (fillfactor = 80);
 
-CREATE INDEX idx_rate_limits_window ON rate_limits(window_start);
+CREATE INDEX idx_rate_limits_updated ON rate_limits(updated_at);
+
+-- Returns TRUE if the request is within the limit, FALSE if rate-limited.
+-- Atomically prunes stale timestamps and appends the current one.
+CREATE OR REPLACE FUNCTION check_rate_limit(
+    p_key            VARCHAR(255),
+    p_limit          INTEGER,
+    p_window_seconds INTEGER
+) RETURNS BOOLEAN AS $$
+DECLARE
+    cutoff       TIMESTAMPTZ := NOW() - (p_window_seconds || ' seconds')::INTERVAL;
+    new_requests JSONB;
+BEGIN
+    INSERT INTO rate_limits (key, requests, updated_at)
+    VALUES (p_key, jsonb_build_array(NOW()::text), NOW())
+    ON CONFLICT (key) DO UPDATE SET
+        requests   = COALESCE(
+                         (SELECT jsonb_agg(ts ORDER BY ts)
+                          FROM   jsonb_array_elements_text(rate_limits.requests) AS ts
+                          WHERE  ts::TIMESTAMPTZ > cutoff),
+                         '[]'::jsonb
+                     ) || jsonb_build_array(NOW()::text),
+        updated_at = NOW()
+    RETURNING requests INTO new_requests;
+
+    RETURN jsonb_array_length(new_requests) <= p_limit;
+END;
+$$ LANGUAGE plpgsql;
 
 -- sessions
 CREATE UNLOGGED TABLE sessions (
