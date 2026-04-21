@@ -12,7 +12,7 @@ type PostgresRepo struct {
 	pool *pgxpool.Pool
 }
 
-func NewPostgresRepo (dbURL string) (*PostgresRepo, error) {
+func NewPostgresRepo(dbURL string) (*PostgresRepo, error) {
 	config, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse db URL: %w", err)
@@ -21,13 +21,13 @@ func NewPostgresRepo (dbURL string) (*PostgresRepo, error) {
 	config.MaxConns = 25
 	config.MinConns = 5
 
-	pool, err := pgxpoll.NewWithConfig(context.Background(), config)
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create connection pool: %w", err)
+		return nil, fmt.Errorf("unable to create connection pool: %w", err)
 	}
 
 	if err := pool.Ping(context.Background()); err != nil {
-		return nil, fmt.Errorf("Unable to ping db: %w", err)
+		return nil, fmt.Errorf("unable to ping db: %w", err)
 	}
 
 	return &PostgresRepo{pool: pool}, nil
@@ -37,7 +37,7 @@ func (r *PostgresRepo) Close() {
 	r.pool.Close()
 }
 
-func (r *PostgresRepo) GetProviderByKey(ctx context.Context, key string) (*models.ValidationProvider, err) {
+func (r *PostgresRepo) GetProviderByKey(ctx context.Context, key string) (*models.ValidationProvider, error) {
 	query := `
 		SELECT id, provider_type, provider_key, scraper_type, config, metadata, is_active
 		FROM providers
@@ -47,12 +47,12 @@ func (r *PostgresRepo) GetProviderByKey(ctx context.Context, key string) (*model
 	var provider models.ValidationProvider
 	err := r.pool.QueryRow(ctx, query, key).Scan(
 		&provider.ID,
-        &provider.ProviderType,
-        &provider.ProviderKey,
-        &provider.ScraperType,
-        &provider.Config,
-        &provider.Metadata,
-        &provider.IsActive,
+		&provider.ProviderType,
+		&provider.ProviderKey,
+		&provider.ScraperType,
+		&provider.Config,
+		&provider.Metadata,
+		&provider.IsActive,
 	)
 
 	if err != nil {

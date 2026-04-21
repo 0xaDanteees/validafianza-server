@@ -1,4 +1,4 @@
-package ScrapeResult
+package scrapers
 
 import (
 	"context"
@@ -6,22 +6,19 @@ import (
 )
 
 type Scraper interface {
-	Scrape(ctx context.Context, req *models.ScrapeRequest)
-	(*models.ScrapeResult, error)
-
+	Scrape(ctx context.Context, req *models.ScrapeRequest) (*models.ScrapeResult, error)
 	Name() string
 	Type() string
 }
 
 type BaseScraper struct {
-	name		string
-	scraperType	string
+	name        string
+	scraperType string
 }
 
-func NewBaseScraper(name, scraperType string)
-*BaseScraper {
+func NewBaseScraper(name, scraperType string) *BaseScraper {
 	return &BaseScraper{
-		name: name,
+		name:        name,
 		scraperType: scraperType,
 	}
 }

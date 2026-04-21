@@ -3,19 +3,12 @@ package scrapers
 import (
 	"fmt"
 	"sync"
-
-	"validafianza-server/internal/scrapers/polizas"
 )
 
 var (
 	registry = make(map[string]Scraper)
-	mu		sync.RWMutex
+	mu       sync.RWMutex
 )
-
-func init() {
-	Register(polizas.NewMapfreScraper())
-	// here we add as many as we have
-}
 
 func Register(scraper Scraper) {
 	mu.Lock()
