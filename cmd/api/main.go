@@ -8,16 +8,17 @@ import (
 	"syscall"
 
 	"github.com/gofiber/fiber/v2"
-    "github.com/gofiber/fiber/v2/middleware/cors"
-    "github.com/gofiber/fiber/v2/middleware/logger"
-    "github.com/gofiber/fiber/v2/middleware/recover"
-    
-    "validafianza-server/internal/config"
-    "validafianza-server/internal/handlers"
-    "validafianza-server/internal/repository"
-    "validafianza-server/internal/services"
-)
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 
+	"validafianza-server/internal/config"
+	"validafianza-server/internal/handlers"
+	"validafianza-server/internal/repository"
+	"validafianza-server/internal/scrapers"
+	"validafianza-server/internal/scrapers/polizas"
+	"validafianza-server/internal/services"
+)
 
 func main() {
 	cfg, err := config.Load()
@@ -27,15 +28,16 @@ func main() {
 
 	repo, err := repository.NewPostgresRepo(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to db: %w", err)
+		log.Fatalf("Failed to connect to db: %v", err)
 	}
-
 	defer repo.Close()
+
+	scrapers.Register(polizas.NewMapfreScraper())
 
 	cacheRepo := repository.NewCacheRepo(repo.Pool())
 	validationService := services.NewValidationServices(repo, cacheRepo, cfg.CacheTTL)
 
-	app := fiber.New(fiber.config{
+	app := fiber.New(fiber.Config{
 		AppName: "Validafianza API v1.0",
 	})
 
@@ -46,17 +48,17 @@ func main() {
 	healthHandler := handlers.NewHealthHandler(repo)
 	polizaHandler := handlers.NewPolizaHandler(validationService)
 
-	app.Get("/health", HealthHandler.Check)
+	app.Get("/health", healthHandler.Check)
 
 	api := app.Group("/api/v1")
 
-	polizas := api.Group("/polizas")
-	polizas.Post("/validate", polizaHandler.ValidatePoliza)
-	poliza.Get("/providers", polizaHandler.ListProviders)
+	polizasGroup := api.Group("/polizas")
+	polizasGroup.Post("/validate", polizaHandler.ValidatePoliza)
+	polizasGroup.Get("/providers", polizaHandler.ListProviders)
 
 	go func() {
 		addr := fmt.Sprintf(":%s", cfg.Port)
-		log.Printf("Ser er starting on %s", addr)
+		log.Printf("Server starting on %s", addr)
 		if err := app.Listen(addr); err != nil {
 			log.Fatalf("Server failed: %v", err)
 		}
@@ -71,5 +73,5 @@ func main() {
 		log.Fatalf("Server forced to shutdown: %v", err)
 	}
 
-	log.Println("server exited")
+	log.Println("Server exited")
 }
