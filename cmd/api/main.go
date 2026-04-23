@@ -5,6 +5,10 @@
 // @license.name	Private
 // @host			localhost:3000
 // @BasePath		/
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 package main
 
 import (
@@ -28,6 +32,7 @@ import (
 	"validafianza-server/internal/scrapers"
 	"validafianza-server/internal/scrapers/polizas"
 	"validafianza-server/internal/services"
+	"validafianza-server/internal/services/providers"
 )
 
 func main() {
@@ -59,6 +64,12 @@ func main() {
 	rateLimitRepo := repository.NewRateLimitRepo(repo.Pool())
 	validationService := services.NewValidationServices(repo, cacheRepo, cfg.CacheTTL)
 
+	authRepo := repository.NewAuthRepository(repo.Pool())
+	emailProvider := providers.NewResendProvider()
+	smsProvider := providers.NewFreeSMSProvider()
+	notificationSvc := services.NewNotificationService(emailProvider, smsProvider)
+	authService := services.NewAuthService(authRepo, notificationSvc)
+
 	app := fiber.New(fiber.Config{
 		AppName: "Validafianza API v1.0",
 	})
@@ -74,12 +85,23 @@ func main() {
 
 	healthHandler := handlers.NewHealthHandler(repo)
 	polizaHandler := handlers.NewPolizaHandler(validationService)
+	authHandler := handlers.NewAuthHandler(authService)
+	authMiddleware := middleware.NewAuthMiddleware(authService)
+	rateLimitMw := middleware.NewRateLimitMiddleware(authRepo)
 
 	app.Get("/health", healthHandler.Check)
 
-	api := app.Group("/api/v1")
+	api := app.Group("/api")
 
-	polizasGroup := api.Group("/polizas")
+	authGroup := api.Group("/auth")
+	authGroup.Post("/register-or-login", rateLimitMw.LimitByIP(10, 60), authHandler.RegisterOrLogin)
+	authGroup.Post("/verify", rateLimitMw.LimitByIP(5, 60), authHandler.VerifyPasscode)
+	authGroup.Get("/profile", authMiddleware.Authenticate, authHandler.GetProfile)
+	authGroup.Post("/logout", authMiddleware.Authenticate, authHandler.Logout)
+
+	v1 := api.Group("/v1")
+	polizasGroup := v1.Group("/polizas")
+	polizasGroup.Use(authMiddleware.Authenticate)
 	polizasGroup.Use(middleware.RateLimit(rateLimitRepo, cfg.RateLimitMax, cfg.RateLimitWindowSec))
 	polizasGroup.Post("/validate", polizaHandler.ValidatePoliza)
 	polizasGroup.Get("/providers", polizaHandler.ListProviders)
