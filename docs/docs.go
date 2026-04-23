@@ -20,6 +20,154 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/auth/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Terminates the authenticated user's session",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Logout",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/profile": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the authenticated user's profile information",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get user profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/register-or-login": {
+            "post": {
+                "description": "Sends a one-time passcode to the user's email. Creates user if doesn't exist.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register or login with email",
+                "parameters": [
+                    {
+                        "description": "User email and optional info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.RegisterLoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/verify": {
+            "post": {
+                "description": "Validates the one-time passcode and returns authentication token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify passcode",
+                "parameters": [
+                    {
+                        "description": "Passcode and device info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.VerifyPasscodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/polizas/providers": {
             "get": {
                 "description": "Returns the keys of all afianzadoras currently registered and available for validation",
@@ -34,7 +182,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ProvidersResponse"
+                            "$ref": "#/definitions/validafianza-server_internal_models.ProvidersResponse"
                         }
                     }
                 }
@@ -60,7 +208,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.ValidationRequest"
+                            "$ref": "#/definitions/validafianza-server_internal_models.ValidationRequest"
                         }
                     }
                 ],
@@ -68,19 +216,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ValidationResponse"
+                            "$ref": "#/definitions/validafianza-server_internal_models.ValidationResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/validafianza-server_internal_models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/validafianza-server_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -100,7 +248,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.HealthResponse"
+                            "$ref": "#/definitions/validafianza-server_internal_models.HealthResponse"
                         }
                     }
                 }
@@ -108,7 +256,59 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.ErrorResponse": {
+        "internal_handlers.AuthResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "internal_handlers.RegisterLoginRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "company_name": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handlers.VerifyPasscodeRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "fingerprint_data"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "maxLength": 8,
+                    "minLength": 6
+                },
+                "device_name": {
+                    "type": "string"
+                },
+                "fingerprint_data": {
+                    "type": "string"
+                }
+            }
+        },
+        "validafianza-server_internal_models.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -117,7 +317,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.HealthResponse": {
+        "validafianza-server_internal_models.HealthResponse": {
             "type": "object",
             "properties": {
                 "service": {
@@ -130,7 +330,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ProvidersResponse": {
+        "validafianza-server_internal_models.ProvidersResponse": {
             "type": "object",
             "properties": {
                 "providers": {
@@ -146,7 +346,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ValidationRequest": {
+        "validafianza-server_internal_models.ValidationRequest": {
             "type": "object",
             "properties": {
                 "force_refresh": {
@@ -166,7 +366,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ValidationResponse": {
+        "validafianza-server_internal_models.ValidationResponse": {
             "type": "object",
             "properties": {
                 "cached_at": {
@@ -206,13 +406,21 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:3000", // change this in prod
+	Host:             "localhost:3000",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Validafianza API",

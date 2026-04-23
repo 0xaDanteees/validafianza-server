@@ -1,12 +1,47 @@
 basePath: /
 definitions:
-  models.ErrorResponse:
+  internal_handlers.AuthResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  internal_handlers.RegisterLoginRequest:
+    properties:
+      company_name:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      phone:
+        type: string
+    required:
+    - email
+    type: object
+  internal_handlers.VerifyPasscodeRequest:
+    properties:
+      code:
+        maxLength: 8
+        minLength: 6
+        type: string
+      device_name:
+        type: string
+      fingerprint_data:
+        type: string
+    required:
+    - code
+    - fingerprint_data
+    type: object
+  validafianza-server_internal_models.ErrorResponse:
     properties:
       error:
         example: 'provider not found: UNKNOWN'
         type: string
     type: object
-  models.HealthResponse:
+  validafianza-server_internal_models.HealthResponse:
     properties:
       service:
         example: validafianza-api
@@ -15,7 +50,7 @@ definitions:
         example: ok
         type: string
     type: object
-  models.ProvidersResponse:
+  validafianza-server_internal_models.ProvidersResponse:
     properties:
       providers:
         example:
@@ -26,7 +61,7 @@ definitions:
           type: string
         type: array
     type: object
-  models.ValidationRequest:
+  validafianza-server_internal_models.ValidationRequest:
     properties:
       force_refresh:
         description: Skip cache and force a fresh scrape
@@ -41,7 +76,7 @@ definitions:
         example: MAPFRE
         type: string
     type: object
-  models.ValidationResponse:
+  validafianza-server_internal_models.ValidationResponse:
     properties:
       cached_at:
         description: When the result was served from cache
@@ -81,6 +116,101 @@ info:
   title: Validafianza API
   version: "1.0"
 paths:
+  /api/auth/logout:
+    post:
+      description: Terminates the authenticated user's session
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.AuthResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout
+      tags:
+      - auth
+  /api/auth/profile:
+    get:
+      description: Returns the authenticated user's profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.AuthResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - auth
+  /api/auth/register-or-login:
+    post:
+      consumes:
+      - application/json
+      description: Sends a one-time passcode to the user's email. Creates user if
+        doesn't exist.
+      parameters:
+      - description: User email and optional info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.RegisterLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.AuthResponse'
+      summary: Register or login with email
+      tags:
+      - auth
+  /api/auth/verify:
+    post:
+      consumes:
+      - application/json
+      description: Validates the one-time passcode and returns authentication token
+      parameters:
+      - description: Passcode and device info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.VerifyPasscodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.AuthResponse'
+      summary: Verify passcode
+      tags:
+      - auth
   /api/v1/polizas/providers:
     get:
       description: Returns the keys of all afianzadoras currently registered and available
@@ -91,7 +221,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ProvidersResponse'
+            $ref: '#/definitions/validafianza-server_internal_models.ProvidersResponse'
       summary: List supported providers
       tags:
       - polizas
@@ -107,22 +237,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.ValidationRequest'
+          $ref: '#/definitions/validafianza-server_internal_models.ValidationRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ValidationResponse'
+            $ref: '#/definitions/validafianza-server_internal_models.ValidationResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/validafianza-server_internal_models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/validafianza-server_internal_models.ErrorResponse'
       summary: Validate fianza policy
       tags:
       - polizas
@@ -136,8 +266,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.HealthResponse'
+            $ref: '#/definitions/validafianza-server_internal_models.HealthResponse'
       summary: Health check
       tags:
       - system
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
