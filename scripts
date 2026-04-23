@@ -1,0 +1,27 @@
+curl -s -X POST http://localhost:3000/api/auth/register-or-login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com", "full_name": "Security Test 2"}' | jq .
+
+
+CODE="email_code"
+
+curl -s -X POST http://localhost:3000/api/auth/verify \
+  -H "Content-Type: application/json" \
+  -d "{\"code\":\"$CODE\",\"fingerprint_data\":\"test-security-v2\",\"device_name\":\"Test Device 2\"}" | jq .
+
+TOKEN=$(echo $RESPONSE | jq -r '.data.token')
+
+
+curl -s -X POST http://localhost:3000/api/v1/polizas/validate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"provider_key": "MAPFRE", "lookup_key": "0032400003909000000491774"}' | jq .
+
+curl -s -X GET http://localhost:3000/api/auth/profile \
+  -H "Authorization: Bearer $TOKEN" | jq .
+
+curl -s -X POST http://localhost:3000/api/auth/logout \
+  -H "Authorization: Bearer $TOKEN" | jq .
+
+curl -s -X GET http://localhost:3000/api/v1/polizas/providers \
+  -H "Authorization: Bearer $TOKEN" | jq .
