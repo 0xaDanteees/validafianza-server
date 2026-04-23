@@ -15,6 +15,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
       - ./db/seeders/providers.sql:/docker-entrypoint-initdb.d/02-providers.sql
+      - ./db/migrations/001_auth_tables.sql:/docker-entrypoint-initdb.d/03-auth-tables.sql
     command:
       - "postgres"
       - "-c"
@@ -47,6 +48,12 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}
       - PORT=${PORT}
       - GIN_MODE=debug
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}
+      - RESEND_FROM_NAME=${RESEND_FROM_NAME}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
     ports:
       - ${PORT}:${PORT}
     depends_on:
