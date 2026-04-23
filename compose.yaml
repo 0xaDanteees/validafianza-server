@@ -53,15 +53,21 @@ services:
       dockerfile: DockerFile
     container_name: validafianza-api-${ENV:-dev}
     environment:
+      - ENV=${ENV:-development}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}
       - PORT=${PORT}
-      - GIN_MODE=debug
       - RESEND_API_KEY=${RESEND_API_KEY}
       - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}
       - RESEND_FROM_NAME=${RESEND_FROM_NAME}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-60}
+      - RATE_LIMIT_WINDOW_SECONDS=${RATE_LIMIT_WINDOW_SECONDS:-60}
+      - CACHE_TTL_HOURS=${CACHE_TTL_HOURS:-24}
+      - SESSION_TTL_DAYS=${SESSION_TTL_DAYS:-7}
+      - PASSCODE_TTL_MINUTES=${PASSCODE_TTL_MINUTES:-10}
+      - MAX_DEVICES_PER_USER=${MAX_DEVICES_PER_USER:-3}
     ports:
       - ${PORT}:${PORT}
     depends_on:
