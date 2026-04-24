@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS sancion_cache (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    rfc VARCHAR(13) NOT NULL UNIQUE,
+    rfc VARCHAR(30) NOT NULL UNIQUE,
     sancionado BOOLEAN NOT NULL DEFAULT FALSE,
     detalles JSONB,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
