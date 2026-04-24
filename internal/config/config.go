@@ -6,7 +6,6 @@ import (
 	"strconv"
 )
 
-
 type Config struct {
 	DatabaseURL        string
 	Port               string
@@ -14,6 +13,7 @@ type Config struct {
 	CacheTTL           int
 	RateLimitMax       int // max requests per window
 	RateLimitWindowSec int // sliding window size in seconds
+	AllowedOrigins     string
 }
 
 func Load() (*Config, error) {
@@ -45,6 +45,7 @@ func Load() (*Config, error) {
 		CacheTTL:           cacheTTL,
 		RateLimitMax:       rateLimitMax,
 		RateLimitWindowSec: rateLimitWindow,
+		AllowedOrigins:     getEnv("ALLOWED_ORIGINS", "*"),
 	}, nil
 }
 

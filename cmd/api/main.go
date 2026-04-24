@@ -70,13 +70,28 @@ func main() {
 	notificationSvc := services.NewNotificationService(emailProvider, smsProvider)
 	authService := services.NewAuthService(authRepo, notificationSvc)
 
+	sancionRepo := repository.NewSancionRepository(repo.Pool())
+	sancionService := services.NewSancionService(sancionRepo, cfg.CacheTTL)
+
 	app := fiber.New(fiber.Config{
 		AppName: "Validafianza API v1.0",
 	})
 
 	app.Use(recover.New())
 	app.Use(middleware.RequestLogger())
-	app.Use(cors.New())
+
+	corsConfig := cors.Config{
+		AllowOrigins: cfg.AllowedOrigins,
+		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders: "Origin,Content-Type,Accept,Authorization",
+		MaxAge:       86400,
+	}
+
+	if cfg.AllowedOrigins != "*" {
+		corsConfig.AllowCredentials = true
+	}
+
+	app.Use(cors.New(corsConfig))
 
 	app.Get("/swagger/*", fiberSwagger.New(fiberSwagger.Config{
 		URL:         "doc.json",
@@ -86,6 +101,7 @@ func main() {
 	healthHandler := handlers.NewHealthHandler(repo)
 	polizaHandler := handlers.NewPolizaHandler(validationService)
 	authHandler := handlers.NewAuthHandler(authService)
+	sancionHandler := handlers.NewSancionHandler(sancionService)
 	authMiddleware := middleware.NewAuthMiddleware(authService)
 	rateLimitMw := middleware.NewRateLimitMiddleware(authRepo)
 
@@ -105,6 +121,12 @@ func main() {
 	polizasGroup.Use(middleware.RateLimit(rateLimitRepo, cfg.RateLimitMax, cfg.RateLimitWindowSec))
 	polizasGroup.Post("/validate", polizaHandler.ValidatePoliza)
 	polizasGroup.Get("/providers", polizaHandler.ListProviders)
+
+	sancionesGroup := v1.Group("/sanciones")
+	sancionesGroup.Use(authMiddleware.Authenticate)
+	sancionesGroup.Use(middleware.RateLimit(rateLimitRepo, cfg.RateLimitMax, cfg.RateLimitWindowSec))
+	sancionesGroup.Post("/scg", sancionHandler.ValidarRFCSCG)
+	sancionesGroup.Post("/sfp", sancionHandler.ValidarRFCSFP)
 
 	go func() {
 		addr := fmt.Sprintf(":%s", cfg.Port)
