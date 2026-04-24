@@ -39,13 +39,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                            "$ref": "#/definitions/handlers.AuthResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                            "$ref": "#/definitions/handlers.AuthResponse"
                         }
                     }
                 }
@@ -70,13 +70,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                            "$ref": "#/definitions/handlers.AuthResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                            "$ref": "#/definitions/handlers.AuthResponse"
                         }
                     }
                 }
@@ -102,7 +102,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.RegisterLoginRequest"
+                            "$ref": "#/definitions/handlers.RegisterLoginRequest"
                         }
                     }
                 ],
@@ -110,13 +110,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                            "$ref": "#/definitions/handlers.AuthResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                            "$ref": "#/definitions/handlers.AuthResponse"
                         }
                     }
                 }
@@ -142,7 +142,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.VerifyPasscodeRequest"
+                            "$ref": "#/definitions/handlers.VerifyPasscodeRequest"
                         }
                     }
                 ],
@@ -150,19 +150,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                            "$ref": "#/definitions/handlers.AuthResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                            "$ref": "#/definitions/handlers.AuthResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.AuthResponse"
+                            "$ref": "#/definitions/handlers.AuthResponse"
                         }
                     }
                 }
@@ -182,7 +182,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/validafianza-server_internal_models.ProvidersResponse"
+                            "$ref": "#/definitions/models.ProvidersResponse"
                         }
                     }
                 }
@@ -208,7 +208,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/validafianza-server_internal_models.ValidationRequest"
+                            "$ref": "#/definitions/models.ValidationRequest"
                         }
                     }
                 ],
@@ -216,19 +216,121 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/validafianza-server_internal_models.ValidationResponse"
+                            "$ref": "#/definitions/models.ValidationResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/validafianza-server_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/validafianza-server_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sanciones/scg": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Checks if an RFC is sanctioned by SCG (CDMX Comptroller). Results are cached for CACHE_TTL_HOURS.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sanciones"
+                ],
+                "summary": "Validate RFC against SCG sanctions",
+                "parameters": [
+                    {
+                        "description": "RFC to validate",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ValidarRFCRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SancionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SancionResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SancionResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sanciones/sfp": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Checks if an RFC is sanctioned by SFP (Public Function). Results are cached for CACHE_TTL_HOURS. Note: This endpoint uses browser automation and may take 60-90 seconds.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sanciones"
+                ],
+                "summary": "Validate RFC against SFP sanctions",
+                "parameters": [
+                    {
+                        "description": "RFC to validate",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ValidarRFCRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SancionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SancionResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SancionResponse"
                         }
                     }
                 }
@@ -248,7 +350,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/validafianza-server_internal_models.HealthResponse"
+                            "$ref": "#/definitions/models.HealthResponse"
                         }
                     }
                 }
@@ -256,7 +358,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "internal_handlers.AuthResponse": {
+        "handlers.AuthResponse": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -268,7 +370,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handlers.RegisterLoginRequest": {
+        "handlers.RegisterLoginRequest": {
             "type": "object",
             "required": [
                 "email"
@@ -288,7 +390,33 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handlers.VerifyPasscodeRequest": {
+        "handlers.SancionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string",
+                    "example": "RFC validated successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "handlers.ValidarRFCRequest": {
+            "type": "object",
+            "required": [
+                "rfc"
+            ],
+            "properties": {
+                "rfc": {
+                    "type": "string",
+                    "example": "SIR130227V77"
+                }
+            }
+        },
+        "handlers.VerifyPasscodeRequest": {
             "type": "object",
             "required": [
                 "code",
@@ -308,7 +436,7 @@ const docTemplate = `{
                 }
             }
         },
-        "validafianza-server_internal_models.ErrorResponse": {
+        "models.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -317,7 +445,7 @@ const docTemplate = `{
                 }
             }
         },
-        "validafianza-server_internal_models.HealthResponse": {
+        "models.HealthResponse": {
             "type": "object",
             "properties": {
                 "service": {
@@ -330,7 +458,7 @@ const docTemplate = `{
                 }
             }
         },
-        "validafianza-server_internal_models.ProvidersResponse": {
+        "models.ProvidersResponse": {
             "type": "object",
             "properties": {
                 "providers": {
@@ -346,7 +474,7 @@ const docTemplate = `{
                 }
             }
         },
-        "validafianza-server_internal_models.ValidationRequest": {
+        "models.ValidationRequest": {
             "type": "object",
             "properties": {
                 "force_refresh": {
@@ -366,7 +494,7 @@ const docTemplate = `{
                 }
             }
         },
-        "validafianza-server_internal_models.ValidationResponse": {
+        "models.ValidationResponse": {
             "type": "object",
             "properties": {
                 "cached_at": {

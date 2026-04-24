@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  internal_handlers.AuthResponse:
+  handlers.AuthResponse:
     properties:
       data: {}
       message:
@@ -8,7 +8,7 @@ definitions:
       success:
         type: boolean
     type: object
-  internal_handlers.RegisterLoginRequest:
+  handlers.RegisterLoginRequest:
     properties:
       company_name:
         type: string
@@ -21,7 +21,25 @@ definitions:
     required:
     - email
     type: object
-  internal_handlers.VerifyPasscodeRequest:
+  handlers.SancionResponse:
+    properties:
+      data: {}
+      message:
+        example: RFC validated successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  handlers.ValidarRFCRequest:
+    properties:
+      rfc:
+        example: SIR130227V77
+        type: string
+    required:
+    - rfc
+    type: object
+  handlers.VerifyPasscodeRequest:
     properties:
       code:
         maxLength: 8
@@ -35,13 +53,13 @@ definitions:
     - code
     - fingerprint_data
     type: object
-  validafianza-server_internal_models.ErrorResponse:
+  models.ErrorResponse:
     properties:
       error:
         example: 'provider not found: UNKNOWN'
         type: string
     type: object
-  validafianza-server_internal_models.HealthResponse:
+  models.HealthResponse:
     properties:
       service:
         example: validafianza-api
@@ -50,7 +68,7 @@ definitions:
         example: ok
         type: string
     type: object
-  validafianza-server_internal_models.ProvidersResponse:
+  models.ProvidersResponse:
     properties:
       providers:
         example:
@@ -61,7 +79,7 @@ definitions:
           type: string
         type: array
     type: object
-  validafianza-server_internal_models.ValidationRequest:
+  models.ValidationRequest:
     properties:
       force_refresh:
         description: Skip cache and force a fresh scrape
@@ -76,7 +94,7 @@ definitions:
         example: MAPFRE
         type: string
     type: object
-  validafianza-server_internal_models.ValidationResponse:
+  models.ValidationResponse:
     properties:
       cached_at:
         description: When the result was served from cache
@@ -125,11 +143,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handlers.AuthResponse'
+            $ref: '#/definitions/handlers.AuthResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handlers.AuthResponse'
+            $ref: '#/definitions/handlers.AuthResponse'
       security:
       - BearerAuth: []
       summary: Logout
@@ -144,11 +162,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handlers.AuthResponse'
+            $ref: '#/definitions/handlers.AuthResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handlers.AuthResponse'
+            $ref: '#/definitions/handlers.AuthResponse'
       security:
       - BearerAuth: []
       summary: Get user profile
@@ -166,18 +184,18 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_handlers.RegisterLoginRequest'
+          $ref: '#/definitions/handlers.RegisterLoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handlers.AuthResponse'
+            $ref: '#/definitions/handlers.AuthResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handlers.AuthResponse'
+            $ref: '#/definitions/handlers.AuthResponse'
       summary: Register or login with email
       tags:
       - auth
@@ -192,22 +210,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_handlers.VerifyPasscodeRequest'
+          $ref: '#/definitions/handlers.VerifyPasscodeRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handlers.AuthResponse'
+            $ref: '#/definitions/handlers.AuthResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_handlers.AuthResponse'
+            $ref: '#/definitions/handlers.AuthResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_handlers.AuthResponse'
+            $ref: '#/definitions/handlers.AuthResponse'
       summary: Verify passcode
       tags:
       - auth
@@ -221,7 +239,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/validafianza-server_internal_models.ProvidersResponse'
+            $ref: '#/definitions/models.ProvidersResponse'
       summary: List supported providers
       tags:
       - polizas
@@ -237,25 +255,92 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/validafianza-server_internal_models.ValidationRequest'
+          $ref: '#/definitions/models.ValidationRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/validafianza-server_internal_models.ValidationResponse'
+            $ref: '#/definitions/models.ValidationResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/validafianza-server_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/validafianza-server_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Validate fianza policy
       tags:
       - polizas
+  /api/v1/sanciones/scg:
+    post:
+      consumes:
+      - application/json
+      description: Checks if an RFC is sanctioned by SCG (CDMX Comptroller). Results
+        are cached for CACHE_TTL_HOURS.
+      parameters:
+      - description: RFC to validate
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ValidarRFCRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SancionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SancionResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SancionResponse'
+      security:
+      - BearerAuth: []
+      summary: Validate RFC against SCG sanctions
+      tags:
+      - sanciones
+  /api/v1/sanciones/sfp:
+    post:
+      consumes:
+      - application/json
+      description: 'Checks if an RFC is sanctioned by SFP (Public Function). Results
+        are cached for CACHE_TTL_HOURS. Note: This endpoint uses browser automation
+        and may take 60-90 seconds.'
+      parameters:
+      - description: RFC to validate
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ValidarRFCRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SancionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SancionResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SancionResponse'
+      security:
+      - BearerAuth: []
+      summary: Validate RFC against SFP sanctions
+      tags:
+      - sanciones
   /health:
     get:
       description: Returns service liveness. Does not check DB — use for load balancer
@@ -266,7 +351,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/validafianza-server_internal_models.HealthResponse'
+            $ref: '#/definitions/models.HealthResponse'
       summary: Health check
       tags:
       - system
